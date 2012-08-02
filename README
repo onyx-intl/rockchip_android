@@ -1,0 +1,29 @@
+RockChip Android SDK Ver: RK2818_EINK_ANDROID2.2_SDK_V1.1_20120516
+
+Top Repo: git@github.com:onyx-intl/rockchip_android.git
+
+Submodule:
+rk_bionic
+rk_bootable
+rk_build
+rk_cts
+rk_dalvik
+rk_development
+rk_device
+rk_external
+rk_frameworks
+rk_hardware
+rk_kernel
+rk_ndk
+rk_packages
+rk_prebuilt
+rk_sdk
+rk_system
+rk_tool
+
+Usage:
+git clone git@github.com:onyx-intl/rockchip_android.git
+git submodule init
+git submodule update
+git submodule foreach git checkout master
+make
