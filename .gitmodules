@@ -1,0 +1,51 @@
+[submodule "bionic"]
+	path = bionic
+	url = git@github.com:onyx-intl/rk_bionic.git
+[submodule "bootable"]
+	path = bootable
+	url = git@github.com:onyx-intl/rk_bootable.git
+[submodule "build"]
+	path = build
+	url = git@github.com:onyx-intl/rk_build.git
+[submodule "cts"]
+	path = cts
+	url = git@github.com:onyx-intl/rk_cts.git
+[submodule "dalvik"]
+	path = dalvik
+	url = git@github.com:onyx-intl/rk_dalvik.git
+[submodule "development"]
+	path = development
+	url = git@github.com:onyx-intl/rk_development.git
+[submodule "device"]
+	path = device
+	url = git@github.com:onyx-intl/rk_device.git
+[submodule "external"]
+	path = external
+	url = git@github.com:onyx-intl/rk_external.git
+[submodule "frameworks"]
+	path = frameworks
+	url = git@github.com:onyx-intl/rk_frameworks.git
+[submodule "hardware"]
+	path = hardware
+	url = git@github.com:onyx-intl/rk_hardware.git
+[submodule "kernel"]
+	path = kernel
+	url = git@github.com:onyx-intl/rk_kernel.git
+[submodule "ndk"]
+	path = ndk
+	url = git@github.com:onyx-intl/rk_ndk.git
+[submodule "packages"]
+	path = packages
+	url = git@github.com:onyx-intl/rk_packages.git
+[submodule "prebuilt"]
+	path = prebuilt
+	url = git@github.com:onyx-intl/rk_prebuilt.git
+[submodule "sdk"]
+	path = sdk
+	url = git@github.com:onyx-intl/rk_sdk.git
+[submodule "system"]
+	path = system
+	url = git@github.com:onyx-intl/rk_system.git
+[submodule "tool"]
+	path = tool
+	url = git@github.com:onyx-intl/rk_tool.git

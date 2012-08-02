@@ -1,0 +1,193 @@
+#!/bin/bash
+set -e
+
+. build/envsetup.sh >/dev/null && setpaths
+
+
+DEV_DIR=tool/rockdev
+IMAGE_DIR=$DEV_DIR/Image
+BOOT_DIR=$OUT/root
+RECOVERY_DIR=$OUT/recovery
+SYSTEM_DIR=$OUT/system
+MISC_IMG=$IMAGE_DIR/misc.img
+BOOT_IMG=$IMAGE_DIR/boot.img
+RECOVERY_IMG=$IMAGE_DIR/recovery.img
+SYSTEM_IMG=$IMAGE_DIR/system.img
+PARAMETER=$$IMAGE_DIR/parameter
+TOOLS=tool
+INSTALL_KERNEL=$OUT/kernel
+
+# version info less than 16 bytes
+BOOT_VERSION="v1.01"
+RECOVERY_VERSION="v1.01"
+SYSTEM_VERSION="v1.01"
+
+cp -a device/rockchip/ebook/adobefonts/ $SYSTEM_DIR/
+
+mkdir -p $IMAGE_DIR
+
+RAMDISK=
+
+mkboot_cramfs() {
+        echo   "cramfs"
+        rm -f $BOOT_IMG
+        chmod 777 $BOOT_DIR -R
+        mkfs.cramfs -n $BOOT_VERSION $BOOT_DIR $BOOT_IMG
+        if [ -f "$BOOT_IMG" ]; then
+        #        $SCRTOOL/addcrc32 $BOOT_IMG
+                echo "*** OKAY ***"
+        else
+                echo "Can't create $BOOT_IMG"
+              return
+        fi
+}
+
+mkrecovery_cramfs() {
+        echo   "cramfs"
+        rm -f $RECOVERY_IMG
+        chmod 777 $RECOVERY_DIR -R
+        mkfs.cramfs -n $RECOVERY_VERSION $RECOVERY_DIR/root $RECOVERY_IMG
+        if [ -f "$RECOVERY_IMG" ]; then
+        #        $SCRTOOL/addcrc32 $RECOVERY_IMG
+                echo "*** OKAY ***"
+        else
+                echo "Can't create $RECOVERY_IMG"
+              return
+        fi
+}
+
+
+markramdisk() {
+      [ -n $RAMDISK -a -f $RAMDISK ] && \
+	ls -l $RAMDISK|awk '{ printf "size:%-15s",$5 }' > /tmp/temp && \
+	cat $RAMDISK >> /tmp/temp && \
+	mv /tmp/temp $RAMDISK > /dev/null
+}
+
+mkboot() {
+	echo     "******************************"
+	echo     "*       Make Boot Image      *"
+	echo     "******************************"
+	rm -f $BOOT_IMG
+	chmod 777 $BOOT_DIR -R
+        echo -n "create boot.img without kernel... "
+
+        if [ ! -z "`cat tool/rockdev/Image/parameter  |grep noinitrd`" ];then
+              mkboot_cramfs
+              return
+        fi
+        
+	  RAMDISK=$OUT/ramdisk.img
+        [ -d $OUT/root ] && \
+        mkbootfs $BOOT_DIR | gzip > $OUT/ramdisk.img && \
+	  markramdisk && \
+        $TOOLS/mkkrnlimg $OUT/ramdisk.img $BOOT_IMG >/dev/null
+
+	if [ -f "$BOOT_IMG" ]; then
+		echo "*** OKAY ***"
+	else
+		echo "Can't create $BOOT_IMG"
+              return
+	fi
+}
+
+mkrecovery() {
+	echo     "******************************"
+	echo     "*       Make Recovery Image   *"
+	echo     "******************************"
+	rm -f $RECOVERY_IMG
+	chmod 777 $RECOVERY_DIR -R
+        echo -n "create recovery.img without kernel... "
+
+        
+        if [ ! -z "`cat tool/rockdev/Image/parameter  |grep noinitrd`" ];then
+              mkrecovery_cramfs
+              return
+        fi
+        
+	  RAMDISK=$OUT/recovery_ramdisk.img
+        [ -d $OUT/root ] && \
+        mkbootfs $RECOVERY_DIR/root | gzip > $OUT/recovery_ramdisk.img && \
+	  markramdisk && \
+        $TOOLS/mkkrnlimg $OUT/recovery_ramdisk.img $RECOVERY_IMG >/dev/null
+
+	if [ -f "$RECOVERY_IMG" ]; then
+		echo "*** OKAY ***"
+	else
+		echo "Can't create $RECOVERY_IMG"
+              return
+	fi
+}
+
+mksystem() {
+	echo     "******************************"
+	echo     "*      Make System Image     *"
+	echo     "******************************"
+	rm -f $SYSTEM_IMG
+	if [ -d $OUT/system ]
+	then
+		FSTYPE=`grep 'mtd@system' $OUT/root/init.rc | head -n 1 | awk '{ print $2 }'`
+		echo system filesysystem is $FSTYPE
+		if [ "$FSTYPE" = "cramfs" ]
+		then
+		        chmod -R 777 $OUT/system
+		        mkfs.cramfs -n $SYSTEM_VERSION $OUT/system $SYSTEM_IMG
+		elif [ "$FSTYPE" = "ext3" ]
+		then
+		        num_blocks=`du -sk $OUT/system | tail -n1 | awk '{print $1;}'`
+		        num_blocks=`expr $num_blocks + 20480`
+
+		        num_inodes=`find $OUT/system | wc -l`
+
+		        genext2fs -a -d $OUT/system -b $num_blocks -N $num_inodes -m 0 $SYSTEM_IMG >/dev/null 2>&1
+		        tune2fs -j -L system -c -1 -i 0 $SYSTEM_IMG >/dev/null
+		        e2fsck -fy $SYSTEM_IMG >/dev/null 2>&1 || true
+
+		        num_blocks=`resize2fs -P $SYSTEM_IMG 2>&1 | tail -n1 | awk '{print $7;}'`
+		        rm -f $SYSTEM_IMG
+		        genext2fs -a -d $OUT/system -b $num_blocks -N $num_inodes -m 0 $SYSTEM_IMG >/dev/null 2>&1
+		        tune2fs -j -L system -c -1 -i 0 $SYSTEM_IMG >/dev/null
+		        e2fsck -fy $SYSTEM_IMG >/dev/null 2>&1 || true
+		fi
+	fi
+
+	if [ -f "$SYSTEM_IMG" ]; then
+		echo "*** OKAY ***"
+	else
+		echo "Can't create $SYSTEM_IMG"
+              return
+	fi
+}
+
+mkall() {
+	mkboot
+	mkrecovery
+	mksystem
+}
+
+
+if [[ $# > 0 ]]
+then
+	while [[ $# > 0 ]]; do
+		case $1 in
+		boot) mkboot;;
+		recovery) mkrecovery;;
+		system) mksystem;;
+		ota) mkboot && mkrecovery;;
+		ebook) mkall;;
+		*)
+			echo "unknown args:$1"
+			exit
+		;;
+		esac
+		shift
+	done
+else
+	mkall
+fi
+
+
+
+
+
+

@@ -1,0 +1,19 @@
+#rk2818 eink android2.2 project
+
+1.build the android system with make command.
+2.run the mk_flash_dev script(at src_root dir) to pack rk's android images.
+
+usage of mk_flash_dev:
+
+./mk_flash_dev [IMAGES]
+IMAGES:
+ boot		build boot.img
+ recovery	build recovery.img
+ system		build system.img
+ ebook		build boot.img recovery.img and system.img
+
+example:
+ ./mk_flash_dev boot recovery
+
+the output dir is $(src_root)/tool/rockdev/Image/
+
